@@ -1,4 +1,4 @@
-use axum::{extract::{Path, Query}, response::{Html, IntoResponse}, routing::{get, get_service}, Router};
+use axum::{extract::{Path, Query}, middleware, response::{Html, IntoResponse, Response}, routing::{get, get_service}, Router};
 use serde::Deserialize;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
@@ -13,6 +13,7 @@ async fn main() {
     let routes_all = Router::new()
             .merge(routes_hello())
             .merge(web::routes_login::routes())
+            .layer(middleware::map_response(main_response_mapper))
             .fallback_service(routes_static());
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
 	println!("LISTENING on {:?}\n", listener.local_addr());
@@ -49,4 +50,9 @@ async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse{
 
 fn routes_static() -> Router {
     Router::new().fallback_service(get_service(ServeDir::new("./")))
+}
+
+async fn main_response_mapper(res: Response) -> Response {
+    println!("Response mapper");
+    res
 }
