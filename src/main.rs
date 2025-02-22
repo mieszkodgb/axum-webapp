@@ -1,12 +1,15 @@
-use axum::{extract::{Path, Query}, response::{Html, IntoResponse}, routing::{get}, Router};
+use axum::{extract::{Path, Query}, response::{Html, IntoResponse}, routing::{get, get_service}, Router};
 use serde::Deserialize;
 use tokio::net::TcpListener;
+use tower_http::services::ServeDir;
 
 #[allow(unused)]
 
 #[tokio::main]
 async fn main() {
-    let routes_all = Router::new().merge(routes_hello());
+    let routes_all = Router::new()
+            .merge(routes_hello())
+            .fallback_service(routes_static());
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
 	println!("LISTENING on {:?}\n", listener.local_addr());
 	axum::serve(listener, routes_all.into_make_service())
@@ -38,4 +41,8 @@ async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse{
 async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse{
     println!("Handler hello2 - {name:?}");
     Html(format!("Hello <strong>{name}</strong>"))
+}
+
+fn routes_static() -> Router {
+    Router::new().fallback_service(get_service(ServeDir::new("./")))
 }
