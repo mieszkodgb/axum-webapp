@@ -5,7 +5,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error{
     LoginFail,
-    TicketNotFound {id: u64}
+    TicketNotFound {id: u64},
+    AuthFail
 }
 
 impl IntoResponse for Error {
