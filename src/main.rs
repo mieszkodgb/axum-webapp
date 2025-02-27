@@ -11,6 +11,7 @@ use errors::Result;
 mod errors;
 mod web;
 mod models;
+mod app_state;
 
 #[tokio::main]
 async fn main() -> Result<()> {

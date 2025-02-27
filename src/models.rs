@@ -1,4 +1,4 @@
-use crate::errors::{Result, Error};
+use crate::{app_state::AppState, errors::{Error, Result}};
 use serde::{Deserialize, Serialize};
 
 use std::sync::{Arc, Mutex};
@@ -10,8 +10,8 @@ pub struct Ticket{
     pub title: String,
     pub content: String,
     pub create_at: DateTime<Utc>,
-    pub update_at: DateTime<Utc>
-    //TODO add user id
+    pub update_at: DateTime<Utc>,
+    pub user_id: u64
 
 }
 
@@ -46,7 +46,11 @@ impl ModelController{
 }
 
 impl ModelController{
-    pub async fn create(&self, input_ticket: InputTicket) -> Result<Ticket>{
+    pub async fn create(
+        &self,
+        state: AppState,
+        input_ticket: InputTicket
+    ) -> Result<Ticket>{
 
         // take control of the ARC Mutex to edit it 
         let mut store = self.ticket_store.lock().unwrap();
@@ -57,14 +61,20 @@ impl ModelController{
             title: input_ticket.title,
             content: input_ticket.content,
             create_at: chrono::offset::Local::now().to_utc(),
-            update_at: chrono::offset::Local::now().to_utc()
+            update_at: chrono::offset::Local::now().to_utc(),
+            user_id: state.user_id()
         };
         store.push(Some(ticket.clone()));
         
         Ok(ticket)
     }
 
-    pub async fn get(&self, id: u64) -> Result<Ticket>{
+    pub async fn get(
+        &self,
+        _state: AppState,
+        id: u64
+    ) -> Result<Ticket>{
+
         let mut store = self.ticket_store.lock().unwrap();
 
         let ticket = store.get_mut(id as usize).and_then(|t| t.clone());
@@ -72,14 +82,24 @@ impl ModelController{
         ticket.ok_or(Error::TicketNotFound { id })
     }
 
-    pub async fn list(&self) -> Result<Vec<Ticket>>{
+    pub async fn list(
+        &self,
+        _state: AppState,
+    ) -> Result<Vec<Ticket>>{
+
         let store = self.ticket_store.lock().unwrap();
         let tickets: Vec<Ticket> = store.iter().filter_map(|t: &Option<Ticket>| t.clone()).collect();
 
         Ok(tickets)
     }
 
-    pub async fn update(&self, id: u64, update_ticket: UpdateTicket) -> Result<Ticket>{
+    pub async fn update(
+        &self,
+        _state: AppState,
+        id: u64,
+        update_ticket: UpdateTicket
+    ) -> Result<Ticket>{
+
         let mut store = self.ticket_store.lock().unwrap();
 
         let ticket = store.get_mut(id as usize)
@@ -101,7 +121,11 @@ impl ModelController{
         }
     }
 
-    pub async fn delete(&self, id: u64) -> Result<Ticket>{
+    pub async fn delete(
+        &self,
+        _state: AppState,
+        id: u64
+    ) -> Result<Ticket>{
         let mut store = self.ticket_store.lock().unwrap();
 
         let ticket = store.get_mut(id as usize).and_then(|t| t.take());

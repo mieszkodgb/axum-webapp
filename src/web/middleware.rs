@@ -1,3 +1,6 @@
+use axum::extract::FromRequestParts;
+use axum::http::request::Parts;
+use axum::RequestPartsExt;
 use chrono::{DateTime, Utc};
 use regex::Regex;
 use axum::body::Body;
@@ -5,7 +8,7 @@ use axum::response::Response;
 use axum::{http::Request, middleware::Next};
 use tower_cookies::Cookies;
 use crate::errors::{Result, Error};
-
+use crate::app_state::AppState;
 use crate::web::AUTH_TOKEN;
 
 #[derive(Debug)]
@@ -16,24 +19,39 @@ struct Token{
 }
 
 pub async fn auth_check(
-    cookies: Cookies,
+    state: Result<AppState>,
     req: Request<Body>,
     next: Next
 ) -> Result<Response> {
 
     println!("Checked for auth");
-    let auth_token = cookies.get(AUTH_TOKEN).map(|c| c.value().to_string());
 
-    //Token parsing
-    let token = auth_token
-        .ok_or(Error::AuthFailMissingToken)
-        .and_then(parse_token)?;
+    state?;
+    
+    Ok(next.run(req).await)
+}
 
-    //TODO add token validation https://www.youtube.com/watch?v=-9K7zNgsbP0
-    let valid_token = validate_token(token);
-    match valid_token {
-        true => Ok(next.run(req).await),
-        false => Err(Error::AuthFailWrongTokenValue)
+impl<S: Send + Sync> FromRequestParts<S> for AppState {
+    type Rejection = Error;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> std::result::Result<Self, Self::Rejection> {
+        println!("Extractor App state");
+
+        // Extract cookies
+        let cookies = parts.extract::<Cookies>().await.unwrap();
+        let auth_token = cookies.get(AUTH_TOKEN).map(|c| c.value().to_string());
+
+        let token = auth_token
+            .ok_or(Error::AuthFailMissingToken)
+            .and_then(parse_token)?;
+
+        let user_id = token.user_id.clone();
+        //TODO add token validation https://www.youtube.com/watch?v=-9K7zNgsbP0
+        let valid_token = validate_token(token);
+        match valid_token {
+            true => Ok(AppState::new(user_id)),
+            false => Err(Error::AuthFailWrongTokenValue)
+        } 
     }
 }
 
