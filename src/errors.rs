@@ -6,7 +6,9 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error{
     LoginFail,
     TicketNotFound {id: u64},
-    AuthFail
+    AuthFailMissingToken,
+    AuthFailWrongTokenFormat,
+    AuthFailWrongTokenValue
 }
 
 impl IntoResponse for Error {
