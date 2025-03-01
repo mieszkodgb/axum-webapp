@@ -26,6 +26,10 @@ async fn main() -> Result<()> {
             .merge(web::routes_login::routes())
             .nest("/api", routes_api)
             .layer(middleware::map_response(main_response_mapper))
+            .layer(middleware::from_fn_with_state(
+                mc.clone(),
+                web::middleware::state_resolver
+            ))
             .layer(CookieManagerLayer::new())
             .fallback_service(routes_static());
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();

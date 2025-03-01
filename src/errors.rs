@@ -2,13 +2,14 @@ use axum::response::{IntoResponse, Response};
 use axum::http::StatusCode;
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Error{
     LoginFail,
     TicketNotFound {id: u64},
     AuthFailMissingToken,
     AuthFailWrongTokenFormat,
-    AuthFailWrongTokenValue
+    AuthFailWrongTokenValue,
+    AuthFailMissingStateInRequest,
 }
 
 impl IntoResponse for Error {
