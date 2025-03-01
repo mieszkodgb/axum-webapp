@@ -14,7 +14,7 @@ use crate::web::AUTH_TOKEN;
 #[derive(Debug)]
 struct Token{
     user_id: u64,
-    expiration: DateTime<Utc>,
+    expiration: String,//DateTime<Utc>,
     signature: String
 }
 
@@ -79,20 +79,28 @@ impl<S: Send + Sync> FromRequestParts<S> for AppState {
 
 // Parse token as 'user-[user.id].[expiration].[signature]
 fn parse_token(token: String) -> Result<Token>{
-    let re = Regex::new(r"^user-(?P<user_id>\d+)\.(?P<expiration_date>\d{2}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\.(?P<signature>.+)$").unwrap();
+    let re = Regex::new(r"^user-(?P<user_id>\d+)\.(?P<expiration_date>.+)\.(?P<signature>.+)$").unwrap();
+    println!("Token is {:?}", token);
     let caps = re.captures(&token).ok_or(Error::AuthFailWrongTokenFormat)?;
+    println!("Token regex into {:?} - {:?} - {:?}",
+            caps["user_id"].to_string(),
+            caps["expiration_date"].to_string(),
+            caps["signature"].to_string()
+        );
     let auth_token = Token{
         user_id:caps["user_id"].to_string().parse::<u64>().map_err(|_| Error::AuthFailWrongTokenFormat)?,
-        expiration:caps["expiration_date"].parse::<DateTime<Utc>>().map_err(|_| Error::AuthFailWrongTokenFormat)?,
+        expiration:caps["expiration_date"].to_owned(),//parse::<DateTime<Utc>>().map_err(|_| Error::AuthFailWrongTokenFormat)?,
         signature:caps["signature"].to_owned()
     };
+    println!("Parse auth token");
     Ok(auth_token)
 }
 
 fn validate_token(token: Token) -> bool{
-    if token.expiration > Utc::now(){
-        return false
-    }
-    todo!();
-    return true
+    return true;
+    // if token.expiration > Utc::now(){
+    //     return false
+    // }
+    // // todo!();
+    // return true
 }

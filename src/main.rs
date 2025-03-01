@@ -1,10 +1,11 @@
-use axum::{extract::{Path, Query}, middleware, response::{Html, IntoResponse, Response}, routing::{get, get_service}, Router};
+use axum::{extract::{Path, Query}, middleware, response::{Html, IntoResponse, Response}, routing::{get, get_service}, Json, Router};
 use models::ModelController;
 use serde::Deserialize;
+use serde_json::json;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
-use errors::Result;
+use errors::{Result, Error};
 
 #[allow(unused)]
 
@@ -22,16 +23,17 @@ async fn main() -> Result<()> {
         .route_layer(middleware::from_fn(web::middleware::auth_check));
 
     let routes_all = Router::new()
-            .merge(routes_hello())
-            .merge(web::routes_login::routes())
             .nest("/api", routes_api)
             .layer(middleware::map_response(main_response_mapper))
             .layer(middleware::from_fn_with_state(
                 mc.clone(),
                 web::middleware::state_resolver
             ))
+            .merge(web::routes_login::routes())
             .layer(CookieManagerLayer::new())
-            .fallback_service(routes_static());
+            .merge(routes_hello())
+            .fallback_service(routes_static())
+            ;
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
 	println!("LISTENING on {:?}\n", listener.local_addr());
 	axum::serve(listener, routes_all.into_make_service())
@@ -73,5 +75,25 @@ fn routes_static() -> Router {
 
 async fn main_response_mapper(res: Response) -> Response {
     println!("Response mapper");
-    res
+
+    let service_error = res.extensions().get::<Error>();
+    let client_status_error = service_error
+        .map(|serv_err| serv_err.client_status_and_error());
+
+    let error_response: Option<axum::http::Response<axum::body::Body>> = client_status_error
+        .as_ref()
+        .map(|(status_code, client_error)|{
+            let client_error_body = json!({
+                "error:":{
+                    "type": client_error
+                }
+            });
+            println!("Client error is {:?}", client_error);
+            (*status_code, Json(client_error_body.to_string())).into_response()
+        });
+
+    // TODO add server log
+    println!("Error: {:?}", service_error);
+
+    error_response.unwrap_or(res)
 }

@@ -25,13 +25,13 @@ async fn api_login(cookies: Cookies, paylod: Json<LoginPayload>) -> Result<Json<
             "success": true
         }
     }));
-
+    println!("Login successful");
     Ok(body)
 }
  
 #[derive(Debug, Deserialize)]
 struct LoginPayload {
     username: String,
-    password: String
+    password: String,
 }
 
