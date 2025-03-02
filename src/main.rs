@@ -1,5 +1,9 @@
-use app_state::AppState;
-use axum::{extract::{Path, Query}, http::{Method, Uri}, middleware, response::{Html, IntoResponse, Response}, routing::{get, get_service}, Json, Router};
+use context::Context;
+use axum::{extract::{Path, Query},
+    http::{Method, Uri}, middleware,
+    response::{Html, IntoResponse, Response},
+    routing::{get, get_service}, Json, Router
+    };
 use log::log_request;
 use models::ModelController;
 use serde::Deserialize;
@@ -15,7 +19,7 @@ mod errors;
 mod web;
 mod log;
 mod models;
-mod app_state;
+mod context;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,7 +34,7 @@ async fn main() -> Result<()> {
             .layer(middleware::map_response(main_response_mapper))
             .layer(middleware::from_fn_with_state(
                 mc.clone(),
-                web::middleware::state_resolver
+                web::middleware::context_resolver
             ))
             .merge(web::routes_login::routes())
             .layer(CookieManagerLayer::new())
@@ -77,7 +81,7 @@ fn routes_static() -> Router {
 }
 
 async fn main_response_mapper(
-    state: Result<AppState>,
+    context: Result<Context>,
     uri: Uri,
     req_method: Method,
     res: Response
@@ -105,8 +109,8 @@ async fn main_response_mapper(
     let client_error = client_status_error.unzip().1;
 
     // TOCheck if error what happens here?
-    let state = state.ok();
-    let _ = log_request(req_method, uri, state, service_error, client_error).await;
+    let context = context.ok();
+    let _ = log_request(req_method, uri, context, service_error, client_error).await;
 
     error_response.unwrap_or(res)
 }

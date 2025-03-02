@@ -7,7 +7,7 @@ use axum::response::Response;
 use axum::{http::Request, middleware::Next};
 use tower_cookies::{Cookie, Cookies};
 use crate::errors::{Result, Error};
-use crate::app_state::AppState;
+use crate::context::Context;
 use crate::models::ModelController;
 use crate::web::AUTH_TOKEN;
 
@@ -19,26 +19,26 @@ struct Token{
 }
 
 pub async fn auth_check(
-    state: Result<AppState>,
+    context: Result<Context>,
     req: Request<Body>,
     next: Next
 ) -> Result<Response> {
 
     println!("Checked for auth");
 
-    state?;
+    context?;
     
     Ok(next.run(req).await)
 }
 
-pub async fn state_resolver(
+pub async fn context_resolver(
     _mc: State<ModelController>, // AKA database connection
     cookies: Cookies,
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response>{
 
-    println!("State resolver");
+    println!("Context resolver");
     let auth_token = cookies.get(AUTH_TOKEN).map(|c| c.value().to_string());
  
     let token = auth_token
@@ -48,32 +48,32 @@ pub async fn state_resolver(
     let user_id = token.user_id.clone();
     //TODO add token validation https://www.youtube.com/watch?v=-9K7zNgsbP0
     let valid_token = validate_token(token);
-    let result_state = match valid_token {
-        true => Ok(AppState::new(user_id)),
+    let result_context = match valid_token {
+        true => Ok(Context::new(user_id)),
         false => Err(Error::AuthFailWrongTokenValue)
     };
     // Clean cookie if wrong cookie
-    if result_state.is_err() && !matches!(result_state, Err(Error::AuthFailWrongTokenValue)){
+    if result_context.is_err() && !matches!(result_context, Err(Error::AuthFailWrongTokenValue)){
         cookies.remove(Cookie::from(AUTH_TOKEN));
     }
 
-    // Store app state into req
-    req.extensions_mut().insert(result_state);
+    // Store app context into req
+    req.extensions_mut().insert(result_context);
     Ok(next.run(req).await)
 }
 
-impl<S: Send + Sync> FromRequestParts<S> for AppState {
+impl<S: Send + Sync> FromRequestParts<S> for Context {
     type Rejection = Error;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
-        println!("Extractor App state");
+    async fn from_request_parts(parts: &mut Parts, _context: &S) -> Result<Self> {
+        println!("Extractor App context");
 
-        let result_state = parts.extensions
-            .get::<Result<AppState>>()
-            .ok_or(Error::AuthFailMissingStateInRequest)?
+        let result_context = parts.extensions
+            .get::<Result<Context>>()
+            .ok_or(Error::AuthFailMissingContextInRequest)?
             .clone();
 
-        result_state
+        result_context
     }
 }
 

@@ -13,7 +13,7 @@ pub enum Error{
     AuthFailMissingToken,
     AuthFailWrongTokenFormat,
     AuthFailWrongTokenValue,
-    AuthFailMissingStateInRequest,
+    AuthFailMissingContextInRequest,
 }
 
 // To make Error enum to string

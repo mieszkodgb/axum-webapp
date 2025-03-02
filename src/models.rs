@@ -1,4 +1,4 @@
-use crate::{app_state::AppState, errors::{Error, Result}};
+use crate::{context::Context, errors::{Error, Result}};
 use serde::{Deserialize, Serialize};
 
 use std::sync::{Arc, Mutex};
@@ -48,7 +48,7 @@ impl ModelController{
 impl ModelController{
     pub async fn create(
         &self,
-        state: AppState,
+        context: Context,
         input_ticket: InputTicket
     ) -> Result<Ticket>{
 
@@ -62,7 +62,7 @@ impl ModelController{
             content: input_ticket.content,
             create_at: chrono::offset::Local::now().to_utc(),
             update_at: chrono::offset::Local::now().to_utc(),
-            user_id: state.user_id()
+            user_id: context.user_id()
         };
         store.push(Some(ticket.clone()));
         
@@ -71,7 +71,7 @@ impl ModelController{
 
     pub async fn get(
         &self,
-        _state: AppState,
+        _context: Context,
         id: u64
     ) -> Result<Ticket>{
 
@@ -84,7 +84,7 @@ impl ModelController{
 
     pub async fn list(
         &self,
-        _state: AppState,
+        _context: Context,
     ) -> Result<Vec<Ticket>>{
 
         let store = self.ticket_store.lock().unwrap();
@@ -95,7 +95,7 @@ impl ModelController{
 
     pub async fn update(
         &self,
-        _state: AppState,
+        _context: Context,
         id: u64,
         update_ticket: UpdateTicket
     ) -> Result<Ticket>{
@@ -123,7 +123,7 @@ impl ModelController{
 
     pub async fn delete(
         &self,
-        _state: AppState,
+        _context: Context,
         id: u64
     ) -> Result<Ticket>{
         let mut store = self.ticket_store.lock().unwrap();

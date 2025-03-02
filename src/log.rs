@@ -1,6 +1,4 @@
-use std::os::macos::raw::stat;
-
-use crate::{app_state::AppState, errors::ClientError, Error, Result};
+use crate::{context::Context, errors::ClientError, Error, Result};
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -31,7 +29,7 @@ pub async fn log_request(
     // uuid, Uuid,
     req_method: Method,
     uri: Uri,
-    app_state: Option<AppState>,
+    context: Option<Context>,
     service_error: Option<&Error>,
     client_error: Option<ClientError>,
 ) -> Result<()> {
@@ -48,7 +46,7 @@ pub async fn log_request(
     let log_line = RequestLogLine {
         // uuid: uuid.to_string(),
         timestamp: timestamp.to_string(),
-        user_id: app_state.map(|state| state.user_id()),
+        user_id: context.map(|context| context.user_id()),
         req_path: uri.path().to_string(),
         req_method: req_method.to_string(),
         client_error_type: client_error.map(|err| err.to_string()),
