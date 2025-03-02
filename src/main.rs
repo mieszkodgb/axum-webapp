@@ -1,4 +1,6 @@
-use axum::{extract::{Path, Query}, middleware, response::{Html, IntoResponse, Response}, routing::{get, get_service}, Json, Router};
+use app_state::AppState;
+use axum::{extract::{Path, Query}, http::{Method, Uri}, middleware, response::{Html, IntoResponse, Response}, routing::{get, get_service}, Json, Router};
+use log::log_request;
 use models::ModelController;
 use serde::Deserialize;
 use serde_json::json;
@@ -11,6 +13,7 @@ use errors::{Result, Error};
 
 mod errors;
 mod web;
+mod log;
 mod models;
 mod app_state;
 
@@ -73,7 +76,12 @@ fn routes_static() -> Router {
     Router::new().fallback_service(get_service(ServeDir::new("./")))
 }
 
-async fn main_response_mapper(res: Response) -> Response {
+async fn main_response_mapper(
+    state: Result<AppState>,
+    uri: Uri,
+    req_method: Method,
+    res: Response
+    ) -> Response {
     println!("Response mapper");
 
     let service_error = res.extensions().get::<Error>();
@@ -92,8 +100,13 @@ async fn main_response_mapper(res: Response) -> Response {
             (*status_code, Json(client_error_body.to_string())).into_response()
         });
 
-    // TODO add server log
+    // Server log
     println!("Error: {:?}", service_error);
+    let client_error = client_status_error.unzip().1;
+
+    // TOCheck if error what happens here?
+    let state = state.ok();
+    let _ = log_request(req_method, uri, state, service_error, client_error).await;
 
     error_response.unwrap_or(res)
 }
