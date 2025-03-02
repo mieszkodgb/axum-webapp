@@ -12,6 +12,8 @@ use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 use error::{Result, Error};
+use tracing::{debug, info};
+use tracing_subscriber::EnvFilter;
 
 #[allow(unused)]
 
@@ -23,7 +25,10 @@ mod context;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
+    tracing_subscriber::fmt()
+        // .without_time()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
     let mc = ModelController::new().await?;
 
     let routes_api = web::routes_tickets::routes(mc.clone())
@@ -42,7 +47,7 @@ async fn main() -> Result<()> {
             .fallback_service(routes_static())
             ;
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
-	println!("LISTENING on {:?}\n", listener.local_addr());
+	info!("LISTENING on {:?}\n", listener.local_addr());
 	axum::serve(listener, routes_all.into_make_service())
         .await
         .unwrap();
@@ -64,7 +69,7 @@ struct HelloParams{
 
 // e.g. '/hello?params=Mike'
 async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse{
-    println!("Handler hello - {params:?}");
+    debug!("Handler hello - {params:?}");
 
     let name = params.name.as_deref().unwrap_or("World!");
     Html(format!("Hello <strong>{name}</strong>"))
@@ -72,7 +77,7 @@ async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse{
 
 // e.g. '/hello2/Mike'
 async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse{
-    println!("Handler hello2 - {name:?}");
+    debug!("Handler hello2 - {name:?}");
     Html(format!("Hello <strong>{name}</strong>"))
 }
 
@@ -86,7 +91,7 @@ async fn main_response_mapper(
     req_method: Method,
     res: Response
     ) -> Response {
-    println!("Response mapper");
+    debug!("Response mapper");
 
     let service_error = res.extensions().get::<Error>();
     let client_status_error = service_error
@@ -100,12 +105,12 @@ async fn main_response_mapper(
                     "type": client_error
                 }
             });
-            println!("Client error is {:?}", client_error);
+            debug!("Client error is {:?}", client_error);
             (*status_code, Json(client_error_body.to_string())).into_response()
         });
 
     // Server log
-    println!("Error: {:?}", service_error);
+    debug!("Error: {:?}", service_error);
     let client_error = client_status_error.unzip().1;
 
     // TOCheck if error what happens here?

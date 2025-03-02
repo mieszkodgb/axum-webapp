@@ -6,6 +6,7 @@ use axum::body::Body;
 use axum::response::Response;
 use axum::{http::Request, middleware::Next};
 use tower_cookies::{Cookie, Cookies};
+use tracing::debug;
 use crate::error::{Result, Error};
 use crate::context::Context;
 use crate::model::ModelController;
@@ -24,7 +25,7 @@ pub async fn auth_check(
     next: Next
 ) -> Result<Response> {
 
-    println!("Checked for auth");
+    debug!("Checked for auth");
 
     context?;
     
@@ -38,7 +39,7 @@ pub async fn context_resolver(
     next: Next,
 ) -> Result<Response>{
 
-    println!("Context resolver");
+    debug!("Context resolver");
     let auth_token = cookies.get(AUTH_TOKEN).map(|c| c.value().to_string());
  
     let token = auth_token
@@ -66,7 +67,7 @@ impl<S: Send + Sync> FromRequestParts<S> for Context {
     type Rejection = Error;
 
     async fn from_request_parts(parts: &mut Parts, _context: &S) -> Result<Self> {
-        println!("Extractor App context");
+        debug!("Extractor App context");
 
         let result_context = parts.extensions
             .get::<Result<Context>>()
@@ -80,9 +81,9 @@ impl<S: Send + Sync> FromRequestParts<S> for Context {
 // Parse token as 'user-[user.id].[expiration].[signature]
 fn parse_token(token: String) -> Result<Token>{
     let re = Regex::new(r"^user-(?P<user_id>\d+)\.(?P<expiration_date>.+)\.(?P<signature>.+)$").unwrap();
-    println!("Token is {:?}", token);
+    debug!("Token is {:?}", token);
     let caps = re.captures(&token).ok_or(Error::AuthFailWrongTokenFormat)?;
-    println!("Token regex into {:?} - {:?} - {:?}",
+    debug!("Token regex into {:?} - {:?} - {:?}",
             caps["user_id"].to_string(),
             caps["expiration_date"].to_string(),
             caps["signature"].to_string()
@@ -92,7 +93,7 @@ fn parse_token(token: String) -> Result<Token>{
         expiration:caps["expiration_date"].to_owned(),//parse::<DateTime<Utc>>().map_err(|_| Error::AuthFailWrongTokenFormat)?,
         signature:caps["signature"].to_owned()
     };
-    println!("Parse auth token");
+    debug!("Parse auth token");
     Ok(auth_token)
 }
 

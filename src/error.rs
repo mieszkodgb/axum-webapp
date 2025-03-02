@@ -3,6 +3,7 @@ use std::fmt;
 use axum::response::{IntoResponse, Response};
 use axum::http::StatusCode;
 use serde::Serialize;
+use tracing::debug;
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Clone, Debug, Serialize)]
@@ -25,7 +26,7 @@ impl fmt::Display for Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        println!("Error into Res: {:?}", self);
+        debug!("Error into Res: {:?}", self);
         
         let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 

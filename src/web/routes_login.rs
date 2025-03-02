@@ -5,13 +5,14 @@ use chrono::{Duration, Utc};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tower_cookies::{Cookie, Cookies};
+use tracing::info;
 
 
 pub fn routes() -> Router{
     Router::new().route("/api/login", post(api_login))
 }
 async fn api_login(cookies: Cookies, paylod: Json<LoginPayload>) -> Result<Json<Value>>{
-    println!("Login route");
+    info!("Login route");
 
     // TODO add real db/auth logic
     if paylod.username != "testuser" || paylod.password != "test123" {
@@ -32,7 +33,7 @@ async fn api_login(cookies: Cookies, paylod: Json<LoginPayload>) -> Result<Json<
             "success": true
         }
     }));
-    println!("Login successful");
+    info!("Login successful");
     Ok(body)
 }
  

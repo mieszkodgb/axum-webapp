@@ -4,6 +4,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
 use axum::http::{Method, Uri};
+use tracing::debug;
 
 
 // Not tracing but logger for services like prometheus
@@ -55,7 +56,7 @@ pub async fn log_request(
 
     };
 
-    println!("LogLine: {:?}", json!(log_line));
+    debug!("LogLine: {:?}", json!(log_line));
 
     //TODO Send logline to logger service (like cloudwtach or prometheus)
 
