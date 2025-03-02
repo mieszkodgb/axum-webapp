@@ -1,6 +1,7 @@
 use crate::{error::{Error, Result}, web};
 
 use axum::{routing::post, Json, Router};
+use chrono::{Duration, Utc};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tower_cookies::{Cookie, Cookies};
@@ -18,7 +19,13 @@ async fn api_login(cookies: Cookies, paylod: Json<LoginPayload>) -> Result<Json<
     }
     
     // TODO: implement real auth-token generation/signature
-    cookies.add(Cookie::new(web::AUTH_TOKEN, "user-1.exp.sign")); // format as user id, expiration date, signature
+    let expiration_date = Utc::now() + Duration::days(1);
+    let new_token = format!("user-{user_id}.{expiration}.{signature}",
+        user_id=1,
+        expiration=expiration_date.to_string(),
+        signature="sign"
+    );
+    cookies.add(Cookie::new(web::AUTH_TOKEN, new_token)); // format as user id, expiration date, signature
 
     let body = Json(json!({
         "result": {

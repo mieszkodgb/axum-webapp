@@ -49,8 +49,8 @@ pub async fn context_resolver(
     //TODO add token validation https://www.youtube.com/watch?v=-9K7zNgsbP0
     let valid_token = validate_token(token);
     let result_context = match valid_token {
-        true => Ok(Context::new(user_id)),
-        false => Err(Error::AuthFailWrongTokenValue)
+        Ok(()) => Ok(Context::new(user_id)),
+        Err(..) => Err(Error::AuthFailWrongTokenValue)
     };
     // Clean cookie if wrong cookie
     if result_context.is_err() && !matches!(result_context, Err(Error::AuthFailWrongTokenValue)){
@@ -96,11 +96,12 @@ fn parse_token(token: String) -> Result<Token>{
     Ok(auth_token)
 }
 
-fn validate_token(token: Token) -> bool{
-    return true;
-    // if token.expiration > Utc::now(){
-    //     return false
-    // }
-    // // todo!();
-    // return true
+fn validate_token(token: Token) -> Result<()>{
+    let expiration_date: DateTime<Utc> = token.expiration.parse::<DateTime<Utc>>()
+        .map_err(|_| Error::AuthFailWrongTokenFormat)?;
+    if expiration_date > Utc::now(){
+        return Err(Error::AuthFailWrongTokenValue);
+    }
+    // todo!();
+    return Ok(())
 }
