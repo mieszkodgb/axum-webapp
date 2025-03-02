@@ -15,6 +15,7 @@ pub enum Error{
     AuthFailWrongTokenFormat,
     AuthFailWrongTokenValue,
     AuthFailMissingContextInRequest,
+    ConfigMissingEnv(&'static str)
 }
 
 // To make Error enum to string

@@ -10,7 +10,6 @@ use serde::Deserialize;
 use serde_json::json;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
-use tower_http::services::ServeDir;
 use error::{Result, Error};
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
@@ -22,6 +21,9 @@ mod web;
 mod log;
 mod model;
 mod context;
+mod config;
+
+pub use config::config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -44,7 +46,7 @@ async fn main() -> Result<()> {
             .merge(web::routes_login::routes())
             .layer(CookieManagerLayer::new())
             .merge(routes_hello())
-            .fallback_service(routes_static())
+            .fallback_service(web::routes_static::serve_dir())
             ;
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
 	info!("LISTENING on {:?}\n", listener.local_addr());
@@ -79,10 +81,6 @@ async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse{
 async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse{
     debug!("Handler hello2 - {name:?}");
     Html(format!("Hello <strong>{name}</strong>"))
-}
-
-fn routes_static() -> Router {
-    Router::new().fallback_service(get_service(ServeDir::new("./")))
 }
 
 async fn main_response_mapper(
