@@ -1,4 +1,4 @@
-use crate::{context::Context, errors::ClientError, Error, Result};
+use crate::{context::Context, error::ClientError, Error, Result};
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::{json, Value};

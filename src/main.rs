@@ -5,20 +5,20 @@ use axum::{extract::{Path, Query},
     routing::{get, get_service}, Json, Router
     };
 use log::log_request;
-use models::ModelController;
+use model::ModelController;
 use serde::Deserialize;
 use serde_json::json;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
-use errors::{Result, Error};
+use error::{Result, Error};
 
 #[allow(unused)]
 
-mod errors;
+mod error;
 mod web;
 mod log;
-mod models;
+mod model;
 mod context;
 
 #[tokio::main]

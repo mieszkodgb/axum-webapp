@@ -6,9 +6,9 @@ use axum::body::Body;
 use axum::response::Response;
 use axum::{http::Request, middleware::Next};
 use tower_cookies::{Cookie, Cookies};
-use crate::errors::{Result, Error};
+use crate::error::{Result, Error};
 use crate::context::Context;
-use crate::models::ModelController;
+use crate::model::ModelController;
 use crate::web::AUTH_TOKEN;
 
 #[derive(Debug)]

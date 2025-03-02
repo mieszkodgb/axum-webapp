@@ -1,4 +1,4 @@
-use crate::{errors::{Error, Result}, web};
+use crate::{error::{Error, Result}, web};
 
 use axum::{routing::post, Json, Router};
 use serde::Deserialize;

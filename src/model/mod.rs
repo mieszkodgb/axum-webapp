@@ -1,4 +1,4 @@
-use crate::{context::Context, errors::{Error, Result}};
+use crate::{context::Context, error::{Error, Result}};
 use serde::{Deserialize, Serialize};
 
 use std::sync::{Arc, Mutex};

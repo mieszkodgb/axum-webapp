@@ -1,6 +1,6 @@
 use crate::context::Context;
-use crate::errors::Result;
-use crate::models::{ModelController, Ticket, InputTicket, UpdateTicket};
+use crate::error::Result;
+use crate::model::{ModelController, Ticket, InputTicket, UpdateTicket};
 use axum::{extract::{Path, State}, routing::{delete, get, patch, post}, Json, Router};
 
 
