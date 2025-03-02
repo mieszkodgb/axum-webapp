@@ -19,7 +19,7 @@ struct Token{
     signature: String
 }
 
-pub async fn auth_check(
+pub async fn mw_auth_check(
     context: Result<Context>,
     req: Request<Body>,
     next: Next
@@ -32,7 +32,7 @@ pub async fn auth_check(
     Ok(next.run(req).await)
 }
 
-pub async fn context_resolver(
+pub async fn mw_context_resolver(
     _mc: State<ModelController>, // AKA database connection
     cookies: Cookies,
     mut req: Request<Body>,

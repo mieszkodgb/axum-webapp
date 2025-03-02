@@ -1,13 +1,10 @@
-use context::Context;
 use axum::{extract::{Path, Query},
-    http::{Method, Uri}, middleware,
-    response::{Html, IntoResponse, Response},
-    routing::{get, get_service}, Json, Router
+    middleware,
+    response::{Html, IntoResponse},
+    routing::get, Router
     };
-use log::log_request;
 use model::ModelController;
 use serde::Deserialize;
-use serde_json::json;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use error::{Result, Error};
@@ -24,6 +21,7 @@ mod context;
 mod config;
 
 pub use config::config;
+use web::mw_resp_map::mw_response_mapper;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -34,14 +32,14 @@ async fn main() -> Result<()> {
     let mc = ModelController::new().await?;
 
     let routes_api = web::routes_tickets::routes(mc.clone())
-        .route_layer(middleware::from_fn(web::middleware::auth_check));
+        .route_layer(middleware::from_fn(web::mw_auth::mw_auth_check));
 
     let routes_all = Router::new()
             .nest("/api", routes_api)
-            .layer(middleware::map_response(main_response_mapper))
+            .layer(middleware::map_response(mw_response_mapper))
             .layer(middleware::from_fn_with_state(
                 mc.clone(),
-                web::middleware::context_resolver
+                web::mw_auth::mw_context_resolver
             ))
             .merge(web::routes_login::routes())
             .layer(CookieManagerLayer::new())
@@ -81,39 +79,4 @@ async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse{
 async fn handler_hello2(Path(name): Path<String>) -> impl IntoResponse{
     debug!("Handler hello2 - {name:?}");
     Html(format!("Hello <strong>{name}</strong>"))
-}
-
-async fn main_response_mapper(
-    context: Result<Context>,
-    uri: Uri,
-    req_method: Method,
-    res: Response
-    ) -> Response {
-    debug!("Response mapper");
-
-    let service_error = res.extensions().get::<Error>();
-    let client_status_error = service_error
-        .map(|serv_err| serv_err.client_status_and_error());
-
-    let error_response: Option<axum::http::Response<axum::body::Body>> = client_status_error
-        .as_ref()
-        .map(|(status_code, client_error)|{
-            let client_error_body = json!({
-                "error:":{
-                    "type": client_error
-                }
-            });
-            debug!("Client error is {:?}", client_error);
-            (*status_code, Json(client_error_body.to_string())).into_response()
-        });
-
-    // Server log
-    debug!("Error: {:?}", service_error);
-    let client_error = client_status_error.unzip().1;
-
-    // TOCheck if error what happens here?
-    let context = context.ok();
-    let _ = log_request(req_method, uri, context, service_error, client_error).await;
-
-    error_response.unwrap_or(res)
 }
