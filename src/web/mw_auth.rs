@@ -55,6 +55,7 @@ pub async fn mw_context_resolver(
     };
     // Clean cookie if wrong cookie
     if result_context.is_err() && !matches!(result_context, Err(Error::AuthFailWrongTokenValue)){
+        debug!("Cookie is invalid");
         cookies.remove(Cookie::from(AUTH_TOKEN));
     }
 
@@ -100,7 +101,7 @@ fn parse_token(token: String) -> Result<Token>{
 fn validate_token(token: Token) -> Result<()>{
     let expiration_date: DateTime<Utc> = token.expiration.parse::<DateTime<Utc>>()
         .map_err(|_| Error::AuthFailWrongTokenFormat)?;
-    if expiration_date > Utc::now(){
+    if expiration_date < Utc::now(){
         return Err(Error::AuthFailWrongTokenValue);
     }
     // todo!();
