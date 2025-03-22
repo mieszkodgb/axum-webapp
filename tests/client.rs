@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use axum::Json;
-use reqwest::cookie::Jar;
+use reqwest::{cookie::Jar, Url};
 use serde_json::{json, Value};
 
 
@@ -64,8 +64,19 @@ async fn client() -> Result<(),reqwest::Error>{
     println!("Response: {:?} {}", res_login.version(), res_login.status());
     println!("Headers: {:#?}\n", res_login.headers());
 
-    let body = res_login.text().await?;
+    if let Some(set_cookie) = res_login.headers().get("set-Cookie") {
+        let cookie_str = set_cookie.to_str().unwrap();;
+        let url = "http://localhost:8080/api".parse::<Url>().unwrap();
+        println!("Received cookie: {:?}", cookie_str);
+        jar.add_cookie_str(cookie_str, &url);
+        println!("Login succesfull: {}", res_login.status());
+    }
+    else {
+        println!("Login failed: {}", res_login.status());
+        return Ok(());
+    }
 
+    let body = res_login.text().await?;
     println!("{body}");
 
 
@@ -74,6 +85,7 @@ async fn client() -> Result<(),reqwest::Error>{
     let res = client.post("http://localhost:8080/api/ticket")
         .json(&json!({"title": "Start ticket", "content": "This is a new ticket"}))
         .send().await?;
+
     println!("Response: {:?} {}", res.version(), res.status());
     println!("Headers: {:#?}\n", res.headers());
 
